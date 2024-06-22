@@ -12,10 +12,10 @@ Modded from [SteamAPICheckBypass](https://github.com/oureveryday/Steam-API-Check
 
 ## Usage
 
-### Method 1 (VersionShim) (x64 for pre-built version.dll)
+### Method 1
 
 * Put files in `Release_dlls` beside game exe.
-* Rename the original RSApatch dll `version.dll` to `rsapatch.dll` and put it beside game exe.
+* Put the RSApatch dll `version.dll` beside game exe. (No rename required)
 
 ## Dependencies
 

@@ -10,10 +10,10 @@
 
 ## 使用方法
 
-### 方法 1 (VersionShim) 
+### 方法 1 
 
 * 将 `Release_dlls` 中的文件放置于游戏 exe 同目录下
-* 将原始的 RSA 补丁 `version.dll` 重命名为 `rsapatch.dll` 并放置于游戏 exe 同目录下
+* 将RSA 补丁 `version.dll` 放置于游戏 exe 同目录下
 
 ## 依赖
 

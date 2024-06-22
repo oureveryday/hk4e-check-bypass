@@ -6,6 +6,7 @@
 #include <fstream>
 #include <intrin.h>
 #include <iostream>
+#include <regex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -24,9 +25,9 @@ struct Replace
 
 //----------Configuration start---------------
 
-bool debugprintpath = true;    //Print the path of the file being read
+bool debugprintpath = false;    //Print the path of the file being read
 
-bool enabledebuglogfile = true;      //Enable debug log file
+bool enabledebuglogfile = false;      //Enable debug log file
 
 std::string logfilename = "hk4eCheckBypass.log"; //Log file name
 
@@ -251,7 +252,7 @@ bool CloseHandleByName(const wchar_t* name)
 
 		Sleep(2000);
 	}
-
+	Sleep(8000);
 	_NtQuerySystemInformation NtQuerySystemInformation =
 		(_NtQuerySystemInformation)GetLibraryProcAddress("ntdll.dll", "NtQuerySystemInformation");
 	_NtDuplicateObject NtDuplicateObject =
@@ -347,6 +348,144 @@ bool CloseHandleByName(const wchar_t* name)
 
 	}
 
+	free(handleInfo);
+	CloseHandle(processHandle);
+	return closed;
+}
+
+bool CloseAntiCheatHandle()
+{
+	auto pid = GetCurrentProcessId();
+
+	while (true)
+	{
+		EnumWindows([](HWND hwnd, LPARAM lParam)->BOOL __stdcall
+		{
+			DWORD wndpid = 0;
+			GetWindowThreadProcessId(hwnd, &wndpid);
+
+			char szWindowClass[256]{};
+			GetClassNameA(hwnd, szWindowClass, 256);
+			if (!strcmp(szWindowClass, "UnityWndClass") && wndpid == *(DWORD*)lParam)
+			{
+				*(DWORD*)lParam = 0;
+				return FALSE;
+			}
+
+			return TRUE;
+
+		}, (LPARAM)&pid);
+
+		if (!pid)
+			break;
+
+		Sleep(2000);
+	}
+
+	Sleep(8000);
+	_NtQuerySystemInformation NtQuerySystemInformation =
+		(_NtQuerySystemInformation)GetLibraryProcAddress("ntdll.dll", "NtQuerySystemInformation");
+	_NtDuplicateObject NtDuplicateObject =
+		(_NtDuplicateObject)GetLibraryProcAddress("ntdll.dll", "NtDuplicateObject");
+	_NtQueryObject NtQueryObject =
+		(_NtQueryObject)GetLibraryProcAddress("ntdll.dll", "NtQueryObject");
+	NTSTATUS status;
+
+	ULONG handleInfoSize = 0x10000;
+	PSYSTEM_HANDLE_INFORMATION handleInfo = (PSYSTEM_HANDLE_INFORMATION)malloc(handleInfoSize);
+
+	HANDLE processHandle = GetCurrentProcess();
+	ULONG i;
+
+	/* NtQuerySystemInformation won't give us the correct buffer size,
+		so we guess by doubling the buffer size. */
+	while ((status = NtQuerySystemInformation(
+		SystemHandleInformation,
+		handleInfo,
+		handleInfoSize,
+		NULL
+	)) == STATUS_INFO_LENGTH_MISMATCH)
+		handleInfo = (PSYSTEM_HANDLE_INFORMATION)realloc(handleInfo, handleInfoSize *= 2);
+
+	/* NtQuerySystemInformation stopped giving us STATUS_INFO_LENGTH_MISMATCH. */
+	if (!NT_SUCCESS(status))
+	{
+		PrintLog("NtQuerySystemInformation failed!");
+		return false;
+	}
+
+	bool closed = false;
+	for (i = 0; i < handleInfo->HandleCount; i++)
+	{
+		SYSTEM_HANDLE handle = handleInfo->Handles[i];
+		HANDLE dupHandle = NULL;
+		POBJECT_TYPE_INFORMATION objectTypeInfo;
+		PVOID objectNameInfo;
+		UNICODE_STRING objectName;
+		ULONG returnLength;
+
+		/* Duplicate the handle so we can query it. */
+		if (!NT_SUCCESS(NtDuplicateObject(processHandle, (HANDLE)handle.Handle, GetCurrentProcess(), &dupHandle, 0, 0, 0)))
+			continue;
+
+		/* Query the object type. */
+		objectTypeInfo = (POBJECT_TYPE_INFORMATION)malloc(0x1000);
+		if (!NT_SUCCESS(NtQueryObject(dupHandle, ObjectTypeInformation, objectTypeInfo, 0x1000, NULL)))
+		{
+			CloseHandle(dupHandle);
+			continue;
+		}
+
+		/* Query the object name (unless it has an access of
+			0x0012019f, on which NtQueryObject could hang. */
+		if (handle.GrantedAccess == 0x0012019f)
+		{
+			free(objectTypeInfo);
+			CloseHandle(dupHandle);
+			continue;
+		}
+
+		objectNameInfo = malloc(0x1000);
+		if (!NT_SUCCESS(NtQueryObject(dupHandle, ObjectNameInformation, objectNameInfo, 0x1000, &returnLength)))
+		{
+			/* Reallocate the buffer and try again. */
+			objectNameInfo = realloc(objectNameInfo, returnLength);
+			if (!NT_SUCCESS(NtQueryObject(dupHandle, ObjectNameInformation, objectNameInfo, returnLength, NULL)))
+			{
+				free(objectTypeInfo);
+				free(objectNameInfo);
+				CloseHandle(dupHandle);
+				continue;
+			}
+		}
+
+		/* Cast our buffer into an UNICODE_STRING. */
+		objectName = *(PUNICODE_STRING)objectNameInfo;
+
+		std::regex HandleRegex1("\\\\Sessions\\\\1\\\\BaseNamedObjects\\\\HoYoG.*");
+		std::regex HandleRegex2("\\\\Sessions\\\\1\\\\BaseNamedObjects\\\\[0-9A-Fa-f]{32,}");
+		/* Print the information! */
+		if (objectName.Length)
+		{
+			std::string HandleName = utf16ToUtf8(objectName.Buffer);
+			if (std::regex_search(HandleName, HandleRegex1))
+			{
+				CloseHandle((HANDLE)handle.Handle);
+				PrintLog("Closed handle " + HandleName);
+				closed = true;
+			}
+			if (std::regex_search(HandleName, HandleRegex2))
+			{
+				CloseHandle((HANDLE)handle.Handle);
+				PrintLog("Closed handle " + HandleName);
+				closed = true;
+			}
+		}
+		
+		free(objectTypeInfo);
+		free(objectNameInfo);
+		CloseHandle(dupHandle);
+	}
 	free(handleInfo);
 	CloseHandle(processHandle);
 	return closed;
@@ -584,14 +723,20 @@ void Init()
 		}).detach();
 	std::thread([]() {
 		PrintLog("Disabling AntiCheat...");
-		if (CloseHandleByName(L"\\Device\\HoYoProtect"))
+		if (CloseAntiCheatHandle())
 		{
-			PrintLog("Disabled AntiCheat");
+			PrintLog("Disabled AntiCheat Handles");
 		}
 		else {
-			PrintLog("Disable AntiCheat failed");
+			PrintLog("Disable AntiCheat Handles failed");
 		}
-		
+		if (CloseHandleByName(L"\\Device\\HoYoProtect"))
+		{
+			PrintLog("Disabled HoYoProtect");
+		}
+		else {
+			PrintLog("Disable HoYoProtect failed");
+		}
 		}).detach();
 }
 

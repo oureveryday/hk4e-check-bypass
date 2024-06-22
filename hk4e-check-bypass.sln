@@ -5,6 +5,8 @@ VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "hk4e-check-bypass", "hk4e-check-bypass\hk4e-check-bypass.vcxproj", "{BB7AE88B-C9F0-4739-931E-72571D2EEDDE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mhypbase", "mhypbase\mhypbase.vcxproj", "{B4E0C658-C477-43D3-ADB9-1B0C2666EAFC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -15,6 +17,10 @@ Global
 		{BB7AE88B-C9F0-4739-931E-72571D2EEDDE}.Debug|x64.Build.0 = Debug|x64
 		{BB7AE88B-C9F0-4739-931E-72571D2EEDDE}.Release|x64.ActiveCfg = Release|x64
 		{BB7AE88B-C9F0-4739-931E-72571D2EEDDE}.Release|x64.Build.0 = Release|x64
+		{B4E0C658-C477-43D3-ADB9-1B0C2666EAFC}.Debug|x64.ActiveCfg = Debug|x64
+		{B4E0C658-C477-43D3-ADB9-1B0C2666EAFC}.Debug|x64.Build.0 = Debug|x64
+		{B4E0C658-C477-43D3-ADB9-1B0C2666EAFC}.Release|x64.ActiveCfg = Release|x64
+		{B4E0C658-C477-43D3-ADB9-1B0C2666EAFC}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

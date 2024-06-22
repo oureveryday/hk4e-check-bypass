@@ -1,5 +1,7 @@
 # hk4e Check Bypass
 
+[中文](README_zh.md)
+
 Bypasses version.dll and anticheat check for a certain anime game.
 
 Modded from [SteamAPICheckBypass](https://github.com/oureveryday/Steam-API-Check-Bypass/)

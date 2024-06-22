@@ -1,14 +1,11 @@
 ﻿#include "pch.h"
 
-#include <codecvt>
-
 #include "Console.h"
 #include "detours.h"
+#include <codecvt>
 #include <fstream>
 #include <intrin.h>
 #include <iostream>
-#include <map>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -27,9 +24,9 @@ struct Replace
 
 //----------Configuration start---------------
 
-bool debugprintpath = false;    //Print the path of the file being read
+bool debugprintpath = true;    //Print the path of the file being read
 
-bool enabledebuglogfile = false;      //Enable debug log file
+bool enabledebuglogfile = true;      //Enable debug log file
 
 std::string logfilename = "hk4eCheckBypass.log"; //Log file name
 
@@ -49,7 +46,6 @@ bool isFileExist(const wchar_t* fileName) {
 	}
 	return false;
 }
-
 
 void PrintLog(std::string str)
 {
@@ -229,6 +225,33 @@ static PVOID GetLibraryProcAddress(LPCSTR LibraryName, LPCSTR ProcName)
 
 bool CloseHandleByName(const wchar_t* name)
 {
+	auto pid = GetCurrentProcessId();
+
+	while (true)
+	{
+		EnumWindows([](HWND hwnd, LPARAM lParam)->BOOL __stdcall
+		{
+			DWORD wndpid = 0;
+			GetWindowThreadProcessId(hwnd, &wndpid);
+
+			char szWindowClass[256]{};
+			GetClassNameA(hwnd, szWindowClass, 256);
+			if (!strcmp(szWindowClass, "UnityWndClass") && wndpid == *(DWORD*)lParam)
+			{
+				*(DWORD*)lParam = 0;
+				return FALSE;
+			}
+
+			return TRUE;
+
+		}, (LPARAM)&pid);
+
+		if (!pid)
+			break;
+
+		Sleep(2000);
+	}
+
 	_NtQuerySystemInformation NtQuerySystemInformation =
 		(_NtQuerySystemInformation)GetLibraryProcAddress("ntdll.dll", "NtQuerySystemInformation");
 	_NtDuplicateObject NtDuplicateObject =
@@ -240,12 +263,11 @@ bool CloseHandleByName(const wchar_t* name)
 	ULONG handleInfoSize = 0x10000;
 	PSYSTEM_HANDLE_INFORMATION handleInfo = (PSYSTEM_HANDLE_INFORMATION)malloc(handleInfoSize);
 
-	ULONG pid = 0;
 	HANDLE processHandle = GetCurrentProcess();
 	ULONG i;
 
 	/* NtQuerySystemInformation won't give us the correct buffer size,
-	   so we guess by doubling the buffer size. */
+		so we guess by doubling the buffer size. */
 	while ((status = NtQuerySystemInformation(
 		SystemHandleInformation,
 		handleInfo,
@@ -287,7 +309,7 @@ bool CloseHandleByName(const wchar_t* name)
 		}
 
 		/* Query the object name (unless it has an access of
-		   0x0012019f, on which NtQueryObject could hang. */
+			0x0012019f, on which NtQueryObject could hang. */
 		if (handle.GrantedAccess == 0x0012019f)
 		{
 			free(objectTypeInfo);
@@ -558,8 +580,18 @@ void Init()
 	GetReplaceList();
 	std::thread([]() {
 		DisableVMP();
-		CloseHandleByName(L"\\Device\\HoYoProtect");
 		LoadHook();
+		}).detach();
+	std::thread([]() {
+		PrintLog("Disabling AntiCheat...");
+		if (CloseHandleByName(L"\\Device\\HoYoProtect"))
+		{
+			PrintLog("Disabled AntiCheat");
+		}
+		else {
+			PrintLog("Disable AntiCheat failed");
+		}
+		
 		}).detach();
 }
 
@@ -585,4 +617,4 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	return TRUE;
 }
 
-extern "C" __declspec(dllexport) void SteamAPICheckBypass() {};
+extern "C" __declspec(dllexport) void hk4eCheckBypass() {};

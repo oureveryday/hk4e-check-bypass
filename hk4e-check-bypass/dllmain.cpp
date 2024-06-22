@@ -29,7 +29,7 @@ struct Replace
 
 bool debugprintpath = false;    //Print the path of the file being read
 
-bool enabledebuglogfile = true;      //Enable debug log file
+bool enabledebuglogfile = false;      //Enable debug log file
 
 std::string logfilename = "hk4eCheckBypass.log"; //Log file name
 
@@ -410,7 +410,9 @@ NTSTATUS WINAPI NtCreateFileHook(
 	PVOID EaBuffer,
 	ULONG EaLength)
 {
-	if (ObjectAttributes != nullptr && ObjectAttributes->ObjectName &&
+	try
+	{
+		if (ObjectAttributes != nullptr && ObjectAttributes->ObjectName &&
 		ObjectAttributes->ObjectName->Length &&
 		ObjectAttributes->ObjectName->Buffer != nullptr && !IsBadReadPtr(ObjectAttributes->ObjectName->Buffer, sizeof(WCHAR)) && ObjectAttributes->ObjectName->Buffer[0]) {
 		std::wstring originalPath(ObjectAttributes->ObjectName->Buffer, ObjectAttributes->ObjectName->Length / sizeof(WCHAR));
@@ -419,17 +421,22 @@ NTSTATUS WINAPI NtCreateFileHook(
 		RtlInitUnicodeString(&replacedPathUnicode, replacedPathStr.c_str());
 		ObjectAttributes->ObjectName = &replacedPathUnicode;
 		return oNtCreateFile(
-			FileHandle,
-			DesiredAccess,
-			ObjectAttributes,
-			IoStatusBlock,
-			AllocationSize,
-			FileAttributes,
-			ShareAccess,
-			CreateDisposition,
-			CreateOptions,
-			EaBuffer,
-			EaLength);
+				FileHandle,
+				DesiredAccess,
+				ObjectAttributes,
+				IoStatusBlock,
+				AllocationSize,
+				FileAttributes,
+				ShareAccess,
+				CreateDisposition,
+				CreateOptions,
+				EaBuffer,
+				EaLength);
+		}
+	}
+	catch (...)
+	{
+		PrintLog("Error in NtCreateFileHook");
 	}
 	return oNtCreateFile(
 		FileHandle,
@@ -453,22 +460,29 @@ NTSTATUS WINAPI NtOpenFileHook(
     ULONG              ShareAccess,
     ULONG              OpenOptions)
 {
-	if (ObjectAttributes != nullptr && ObjectAttributes->ObjectName &&
-        ObjectAttributes->ObjectName->Length &&
-        ObjectAttributes->ObjectName->Buffer != nullptr && !IsBadReadPtr(ObjectAttributes->ObjectName->Buffer, sizeof(WCHAR)) && ObjectAttributes->ObjectName->Buffer[0]) {
-        std::wstring originalPath(ObjectAttributes->ObjectName->Buffer, ObjectAttributes->ObjectName->Length / sizeof(WCHAR));
-        std::wstring replacedPathStr = GetReplacedPath(originalPath);
-        UNICODE_STRING replacedPathUnicode;
-        RtlInitUnicodeString(&replacedPathUnicode, replacedPathStr.c_str());
-        ObjectAttributes->ObjectName = &replacedPathUnicode;
-        return oNtOpenFile(
-            FileHandle,
-            DesiredAccess,
-            ObjectAttributes,
-            IoStatusBlock,
-            ShareAccess,
-            OpenOptions);
-    }
+	try
+	{
+		if (ObjectAttributes != nullptr && ObjectAttributes->ObjectName &&
+			ObjectAttributes->ObjectName->Length &&
+			ObjectAttributes->ObjectName->Buffer != nullptr && !IsBadReadPtr(ObjectAttributes->ObjectName->Buffer, sizeof(WCHAR)) && ObjectAttributes->ObjectName->Buffer[0]) {
+			std::wstring originalPath(ObjectAttributes->ObjectName->Buffer, ObjectAttributes->ObjectName->Length / sizeof(WCHAR));
+			std::wstring replacedPathStr = GetReplacedPath(originalPath);
+			UNICODE_STRING replacedPathUnicode;
+			RtlInitUnicodeString(&replacedPathUnicode, replacedPathStr.c_str());
+			ObjectAttributes->ObjectName = &replacedPathUnicode;
+			return oNtOpenFile(
+				FileHandle,
+				DesiredAccess,
+				ObjectAttributes,
+				IoStatusBlock,
+				ShareAccess,
+				OpenOptions);
+		}
+	}
+	catch (...)
+	{
+		PrintLog("Error in NtOpenFileHook");
+	}
     return oNtOpenFile(
         FileHandle,
         DesiredAccess,
@@ -503,7 +517,7 @@ void LoadHook()
 			PrintLog("NtCreateFile Hook Failed. Error: Failed to get NtCreateFile address.");
 		}
 	}
-	
+
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 

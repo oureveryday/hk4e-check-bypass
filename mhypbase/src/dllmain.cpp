@@ -1,15 +1,22 @@
 #include "pch.h"
 
+#include <iostream>
+
 DWORD WINAPI Thread(LPVOID lpParam)
 {
+	std::cout << "[AntiCheatEMU] Thread started" << std::endl;
 	return 0;
 }
 
 HRESULT __cdecl Initialize()
 {
+	std::cout << "[AntiCheatEMU] Initialize called..." << std::endl;
+	Sleep(100);
 	while(true)
 	{
-		Sleep(10000);
+		
+		Sleep(30000);
+		return 1;
 	}
 	return 1;
 }

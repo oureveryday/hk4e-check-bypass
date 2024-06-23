@@ -16,6 +16,7 @@ Modded from [SteamAPICheckBypass](https://github.com/oureveryday/Steam-API-Check
 
 * Put files in `Release_dlls` beside game exe.
 * Put the RSApatch dll `version.dll` beside game exe. (No rename required)
+* If there is `Time Out` error occur, please restart game, as the game is trying to use a inappropiate dll loading time.
 
 ## Dependencies
 

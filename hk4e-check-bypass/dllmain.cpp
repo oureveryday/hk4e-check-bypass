@@ -5,7 +5,6 @@
 #include <codecvt>
 #include <fstream>
 #include <intrin.h>
-#include <iostream>
 #include <regex>
 #include <string>
 #include <thread>
@@ -19,20 +18,21 @@ struct Replace
 {
 	std::wstring origname;
 	std::wstring replacename;
-	bool replaceafterfirsttime;    // Replace reading request after reading for first time
+	bool replaceonfirsttime;    // Replace reading request after reading for first time
 	bool firstime = false;        // first time read indicator, should always be false
 };
 
 //----------Configuration start---------------
 
-bool debugprintpath = false;    //Print the path of the file being read
+bool debugprintpath = true;    //Print the path of the file being read
 
-bool enabledebuglogfile = false;      //Enable debug log file
+bool enabledebuglogfile = true;      //Enable debug log file
 
 std::string logfilename = "hk4eCheckBypass.log"; //Log file name
 
 std::vector<Replace> internalreplaceList = {
 		{L"version.dll", L"version.del", false, false},
+			{L"MHYPBase.dll",L"MHYPBase.org.dll",true,false},
 };//internal replace list example
 
 //----------Configuration end-----------------
@@ -535,14 +535,12 @@ std::wstring GetReplacedPath(std::wstring path)
 	{
 		if (filename.find(replace.origname) != std::wstring::npos)
 		{
-			
-			replace.firstime = true;
-
-			if (replace.replaceafterfirsttime && !replace.firstime)
+			if (replace.replaceonfirsttime && replace.firstime)
 			{
-				PrintLog("Reading " + utf16ToUtf8(replace.origname) + "for first time.");
+				PrintLog("Reading " + utf16ToUtf8(replace.origname) + " after first time.");
 				break;
 			}
+			replace.firstime = true;
 			PrintLog("Reading " + utf16ToUtf8(replace.origname) + ",Replacing...");
 			// Replace the path's filename with replacename
 			size_t pos = path.find_last_of(L"/\\");

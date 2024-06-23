@@ -14,6 +14,8 @@
 #pragma comment(lib, "detours.lib")
 #pragma comment(lib, "ntdll.lib")
 
+
+
 struct Replace
 {
 	std::wstring origname;
@@ -24,9 +26,9 @@ struct Replace
 
 //----------Configuration start---------------
 
-bool debugprintpath = true;    //Print the path of the file being read
+bool debugprintpath = false;    //Print the path of the file being read
 
-bool enabledebuglogfile = true;      //Enable debug log file
+bool enabledebuglogfile = false;      //Enable debug log file
 
 std::string logfilename = "hk4eCheckBypass.log"; //Log file name
 
@@ -97,6 +99,58 @@ typedef enum _SECTION_INFORMATION_CLASS {
 EXTERN_C NTSTATUS __stdcall NtQuerySection(HANDLE SectionHandle, SECTION_INFORMATION_CLASS InformationClass, PVOID InformationBuffer, ULONG InformationBufferSize, PULONG ResultLength);
 EXTERN_C NTSTATUS __stdcall NtProtectVirtualMemory(HANDLE ProcessHandle, PVOID* BaseAddress, PULONG  NumberOfBytesToProtect, ULONG NewAccessProtection, PULONG OldAccessProtection);
 EXTERN_C NTSTATUS __stdcall NtPulseEvent(HANDLE EventHandle, PULONG PreviousState);
+
+uintptr_t PatternScan(LPCSTR module, LPCSTR pattern)
+{
+	static auto pattern_to_byte = [](const char* pattern) {
+
+		auto bytes = std::vector<int>{};
+
+		auto start = const_cast<char*>(pattern);
+
+		auto end = const_cast<char*>(pattern) + strlen(pattern);
+
+		for (auto current = start; current < end; ++current) {
+			if (*current == '?') {
+				++current;
+				if (*current == '?')
+					++current;
+				bytes.push_back(-1);
+			}
+			else {
+				bytes.push_back(strtoul(current, &current, 16));
+			}
+		}
+		return bytes;
+		};
+
+	auto mod = GetModuleHandleA(module);
+	if (!mod)
+		return 0;
+
+	auto dosHeader = (PIMAGE_DOS_HEADER)mod;
+	auto ntHeaders = (PIMAGE_NT_HEADERS)((std::uint8_t*)mod + dosHeader->e_lfanew);
+	auto sizeOfImage = ntHeaders->OptionalHeader.SizeOfImage;
+	auto patternBytes = pattern_to_byte(pattern);
+	auto scanBytes = reinterpret_cast<std::uint8_t*>(mod);
+	auto s = patternBytes.size();
+	auto d = patternBytes.data();
+
+	for (auto i = 0ul; i < sizeOfImage - s; ++i) {
+		bool found = true;
+		for (auto j = 0ul; j < s; ++j) {
+			if (scanBytes[i + j] != d[j] && d[j] != -1) {
+				found = false;
+				break;
+			}
+		}
+
+		if (found) {
+			return (uintptr_t)&scanBytes[i];
+		}
+	}
+	return 0;
+}
 
 void DisableVMP()
 {
@@ -711,9 +765,34 @@ void GetReplaceList()
 	PrintLog("-----------------");
 }
 
+void checkHook()
+{
+	PrintLog("Triggered hook.");
+}
+
 void Init()
 {
 	PrintLog("hk4e check bypass Init");
+	std::thread([]() {
+		Sleep(100);
+		DisableVMP();
+		auto checkaddr = PatternScan("UnityPlayer.dll", "55 41 57 41 56 41 54 56 57 53 48 81 EC 90 02 00 00");
+
+		if (!checkaddr || checkaddr % 16 > 0)
+			PrintLog("Not find check addr.");
+
+		PVOID check = (PVOID)checkaddr;
+		if (!check)
+			PrintLog("Failed to hook check addr.");
+
+		DetourTransactionBegin();
+		DetourUpdateThread((HANDLE)-2);
+		DetourAttach(&check, checkHook);
+		DetourTransactionCommit();
+		}).detach();
+	
+
+	/*
 	GetReplaceList();
 	std::thread([]() {
 		DisableVMP();
@@ -736,7 +815,12 @@ void Init()
 			PrintLog("Disable HoYoProtect failed");
 		}
 		}).detach();
+	*/
 }
+
+// 55 41 57 41 56 41 54 56 57 53 48 81 EC 90 02 00 00
+// rcx = 11 after load
+// rcx = 8 before load
 
 BOOL APIENTRY DllMain(HMODULE hModule,
 	DWORD  ul_reason_for_call,

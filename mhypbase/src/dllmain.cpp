@@ -46,6 +46,8 @@ HRESULT __cdecl Initialize()
 	OutputDebugStringW(L"[AntiCheatEMU] Initialize");
 
 	auto pid = GetCurrentProcessId();
+	TerminateThread(GetCurrentThread(), 0);
+	
 	while (true)
 	{
 		num = num + 1;
@@ -78,12 +80,15 @@ HRESULT __cdecl Initialize()
 
 		if (num > 5)
 		{
-			OutputDebugStringW(L"[AntiCheatEMU] Load time out, please try launch game again.");
-			MessageBoxA(NULL, "[AntiCheatEMU] Load time out, please try launch game again.", "Error", MB_ICONERROR);
-			ExitProcess(0);
+			OutputDebugStringW(L"[AntiCheatEMU] Load time out, forcing kill thread...");
+			TerminateThread(GetCurrentThread(), 0);
+			//OutputDebugStringW(L"[AntiCheatEMU] Load time out, please try launch game again.");
+			//MessageBoxA(NULL, "[AntiCheatEMU] Load time out, please try launch game again.", "Error", MB_ICONERROR);
+			//ExitProcess(0);
 		}
 	}
-
+	
+	//a strange way to make the game working
 	return false;
 }
 

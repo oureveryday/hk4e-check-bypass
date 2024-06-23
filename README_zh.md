@@ -13,8 +13,8 @@
 ### 方法 1 
 
 * 将 `Release_dlls` 中的文件放置于游戏 exe 同目录下
+* 将原始的 RSA 补丁 `version.dll` 重命名为 `rsapatch.dll` 并放置于游戏 exe 同目录下
 * 将RSA 补丁 `version.dll` 放置于游戏 exe 同目录下
-* 如果发生 `Time Out` 错误，请重新启动游戏，因为游戏正在尝试使用不合适的 dll 加载时间。
 
 ## 依赖
 

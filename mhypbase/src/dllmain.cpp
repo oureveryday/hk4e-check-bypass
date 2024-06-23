@@ -11,14 +11,11 @@ DWORD WINAPI Thread(LPVOID lpParam)
 HRESULT __cdecl Initialize()
 {
 	std::cout << "[AntiCheatEMU] Initialize called..." << std::endl;
-	Sleep(100);
+	Sleep(500);
 	while(true)
 	{
-		
 		Sleep(30000);
-		return 1;
 	}
-	return 1;
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

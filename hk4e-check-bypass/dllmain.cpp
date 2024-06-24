@@ -765,9 +765,20 @@ void GetReplaceList()
 	PrintLog("-----------------");
 }
 
-void checkHook()
+PVOID ocheck = nullptr;
+
+void __fastcall checkHook(int num, void* b, void* c, void* d, void* e)
 {
-	PrintLog("Triggered hook.");
+    PrintLog("Triggered hook " + std::to_string(num));
+	if (num == 8)
+	{
+		num = 17;
+		PrintLog("Replaced to " + std::to_string(num));
+	}
+	DetourDetach(&ocheck, checkHook);
+	(decltype(&checkHook)(ocheck)(num, b, c, d, e));
+	DetourAttach(&ocheck, checkHook);
+	return;
 }
 
 void Init()
@@ -785,9 +796,10 @@ void Init()
 		if (!check)
 			PrintLog("Failed to hook check addr.");
 
+		ocheck = check;
 		DetourTransactionBegin();
-		DetourUpdateThread((HANDLE)-2);
-		DetourAttach(&check, checkHook);
+		DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&ocheck, checkHook);
 		DetourTransactionCommit();
 		}).detach();
 	

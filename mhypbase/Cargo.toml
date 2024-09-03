@@ -1,0 +1,26 @@
+[package]
+name = "zzz-patch-loader"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "mhypbase"
+crate-type = ["cdylib"]
+
+[dependencies]
+windows = { version = "0.54.0", features = [
+	"Win32_Foundation",
+	"Win32_System_SystemServices",
+	"Win32_System_LibraryLoader",
+	"Win32_System_Console",
+	"Win32_System_Threading",
+	"Win32_System_Memory",
+] }
+winapi = { version = "0.3", features = ["winuser","processthreadsapi","libloaderapi"] }
+win_dbg_logger = "0.1.0"
+
+[profile.release]
+strip = true      # Automatically strip symbols from the binary.
+lto = true        # Link-time optimization.
+opt-level = 3     # Optimization level 3.
+codegen-units = 1 # Maximum size reduction optimizations.

@@ -15,7 +15,7 @@ use winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_NT_HEADERS};
 use std::slice;
 
 lazy_static! {
-    pub static ref BASE: usize = unsafe { try_get_base_address("UnityPlayer.dll").unwrap() };
+    pub static ref BASE: usize = unsafe { try_get_base_address("GenshinImpact.exe").unwrap() };
 }
 
 pub fn wide_str(value: &str) -> Vec<u16> {

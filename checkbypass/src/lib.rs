@@ -16,7 +16,7 @@ use crate::modules::{Check, MhyContext, Kick};
 use lazy_static::lazy_static;
 
 fn print_log(str: &str) {
-    let log_str = format!("[zzzCheckBypass] {}\n", str);
+    let log_str = format!("[hk4eCheckBypass] {}\n", str);
 
     #[cfg(debug_assertions)]
     {
@@ -33,7 +33,7 @@ unsafe fn thread_func() {
     Console::AllocConsole().unwrap();
     }
 
-    print_log("zzz check bypass Init");
+    print_log("hk4e check bypass Init");
     let lib_name = "ext.dll\0";
     let lib_name_utf16: Vec<u16> = lib_name.encode_utf16().collect();
     LoadLibraryW(lib_name_utf16.as_ptr());
@@ -42,8 +42,11 @@ unsafe fn thread_func() {
     let mut module_manager = MODULE_MANAGER.lock().unwrap();
     let checkaddr = util::pattern_scan("GenshinImpact.exe","55 41 57 41 56 56 57 53 48 81 EC 98 02 00 00 48");
     let kickaddr = util::pattern_scan("GenshinImpact.exe","55 41 56 56 57 53 48 81 EC 00 01 00 00 48 8D AC 24 80 00 00 00 C7 45 7C 00 00 00 00");
+    print_log(&format!("checkaddr: {:?}", checkaddr));
+    print_log(&format!("kickaddr: {:?}", kickaddr));
     module_manager.enable(MhyContext::<Check>::new(checkaddr));
     module_manager.enable(MhyContext::<Kick>::new(kickaddr));
+    print_log(&format!("Hooked."));
 }
 
 lazy_static! {
@@ -53,7 +56,7 @@ lazy_static! {
 #[no_mangle]
 unsafe extern "system" fn DllMain(_: HINSTANCE, call_reason: u32, _: *mut ()) -> bool {
     if call_reason == DLL_PROCESS_ATTACH {
-        std::thread::spawn(|| thread_func());
+        thread_func()
     }
 
     true

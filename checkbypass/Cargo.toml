@@ -1,10 +1,10 @@
 [package]
-name = "zzz-check-bypass"
+name = "hk4e-check-bypass"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "zzzcheckbypass"
+name = "hk4echeckbypass"
 crate-type = ["cdylib"]
 
 [dependencies]
@@ -16,7 +16,7 @@ windows = { version = "0.54.0", features = [
 	"Win32_System_Threading",
 	"Win32_System_Memory",
 ] }
-winapi = { version = "0.3",features = ["winnt","libloaderapi"]}
+winapi = { version = "0.3",features = ["winnt","libloaderapi","memoryapi"]}
 win_dbg_logger = "0.1.0"
 lazy_static = "1.5.0"
 patternscan = "1.2.0"

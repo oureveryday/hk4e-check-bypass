@@ -8,7 +8,7 @@ Modded from [SteamAPICheckBypass](https://github.com/oureveryday/Steam-API-Check
 
 ## Build
 
-* Build with Visual Studio 2022.
+* Build with Cargo.
 
 ## Usage
 

@@ -17,12 +17,7 @@ use lazy_static::lazy_static;
 
 fn print_log(str: &str) {
     let log_str = format!("[hk4eCheckBypass] {}\n", str);
-
-    #[cfg(debug_assertions)]
-    {
-        println!("{}",&log_str);
-    }
-
+    println!("{}",&log_str);
     output_debug_string(&log_str);
 }
 

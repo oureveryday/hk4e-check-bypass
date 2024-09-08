@@ -6,7 +6,7 @@ pub struct Check;
 
 use win_dbg_logger::output_debug_string;
 fn print_log(str: &str) {
-    let log_str = format!("[zzzCheckBypass] {}\n", str);
+    let log_str = format!("[hk4eCheckBypass] {}\n", str);
 
     #[cfg(debug_assertions)]
     {

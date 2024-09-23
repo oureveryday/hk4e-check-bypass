@@ -25,7 +25,7 @@ unsafe fn thread_func() {
 
     #[cfg(debug_assertions)]
     {
-    Console::AllocConsole().unwrap();
+    Console::AllocConsole();
     }
 
     print_log("hk4e check bypass Init");

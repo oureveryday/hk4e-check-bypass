@@ -36,11 +36,11 @@ unsafe fn thread_func() {
     util::disable_memprotect_guard();
     let mut module_manager = MODULE_MANAGER.lock().unwrap();
     let checkaddr = util::pattern_scan("GenshinImpact.exe","55 41 57 41 56 56 57 53 48 81 EC 98 02 00 00 48");
-    let kickaddr = util::pattern_scan("GenshinImpact.exe","55 41 56 56 57 53 48 81 EC 00 01 00 00 48 8D AC 24 80 00 00 00 C7 45 7C 00 00 00 00");
+    //let kickaddr = util::pattern_scan("GenshinImpact.exe","55 41 56 56 57 53 48 81 EC 00 01 00 00 48 8D AC 24 80 00 00 00 C7 45 7C 00 00 00 00");
     print_log(&format!("checkaddr: {:?}", checkaddr));
-    print_log(&format!("kickaddr: {:?}", kickaddr));
+    //print_log(&format!("kickaddr: {:?}", kickaddr));
     module_manager.enable(MhyContext::<Check>::new(checkaddr));
-    module_manager.enable(MhyContext::<Kick>::new(kickaddr));
+    //module_manager.enable(MhyContext::<Kick>::new(kickaddr));
     print_log(&format!("Hooked."));
 }
 

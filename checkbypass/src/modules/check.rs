@@ -40,9 +40,9 @@ impl MhyModule for MhyContext<Check> {
 unsafe extern "win64" fn hkcheckaddr(reg: *mut Registers, _: usize) {
     
     print_log(&format!("Triggered hook: {:x}", (*reg).rcx));
-    if (*reg).rcx == 8 {
-        (*reg).rcx = 17; 
-        print_log(&format!("Replaced to {}", (*reg).rcx)); 
+    if(*reg).rcx == 0 {
+        (*reg).rcx = 0x18;
+    }else{
+        (*reg).rcx = 0xFF;
     }
-
 }

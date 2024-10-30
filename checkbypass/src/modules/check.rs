@@ -19,7 +19,7 @@ fn print_log(str: &str) {
 impl MhyModule for MhyContext<Check> {
     unsafe fn init(&mut self) -> Result<()> {
         if let Some(addr) = self.addr {
-            self.interceptor.attach(
+            self.interceptor.replace(
                 addr as usize,
                 hkcheckaddr,
             )
@@ -37,12 +37,7 @@ impl MhyModule for MhyContext<Check> {
     }
 }
 
-unsafe extern "win64" fn hkcheckaddr(reg: *mut Registers, _: usize) {
+unsafe extern "win64" fn hkcheckaddr(reg: *mut Registers, _: usize, _:usize) ->usize{
     
-    print_log(&format!("Triggered hook: {:x}", (*reg).rcx));
-    if(*reg).rcx == 0 {
-        (*reg).rcx = 0x18;
-    }else{
-        (*reg).rcx = 0xFF;
-    }
+    0
 }

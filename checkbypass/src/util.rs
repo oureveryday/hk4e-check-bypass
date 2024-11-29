@@ -1,7 +1,7 @@
 use core::iter::once;
 use std::ffi::{c_void, OsStr};
 
-use patternscan::scan_first_match;
+use patternscan::{scan_first_match,scan};
 use std::io::Cursor;
 use lazy_static::lazy_static;
 use std::os::windows::ffi::OsStrExt;
@@ -14,8 +14,10 @@ use windows::Win32::System::Memory::{
 use winapi::um::winnt::{IMAGE_DOS_HEADER, IMAGE_NT_HEADERS};
 use std::slice;
 
+use win_dbg_logger::output_debug_string;
+
 lazy_static! {
-    pub static ref BASE: usize = unsafe { try_get_base_address("GenshinImpact.exe").unwrap() };
+    pub static ref BASE: usize = unsafe { try_get_base_address("UnityPlayer.dll").unwrap() };
 }
 
 pub fn wide_str(value: &str) -> Vec<u16> {
@@ -84,7 +86,7 @@ pub unsafe fn pattern_scan(module: &str, pattern: &str) -> Option<*mut u8> {
     
     let module_handle = match GetModuleHandleW(PCWSTR::from_raw(w_module_name.as_ptr())) {
         Ok(module) => Some(module.0 as usize),
-        Err(_) => return None,
+        Err(_) => panic!("Failed to get module handle"),
     };
     
     let module_handle_addr = module_handle.unwrap();
@@ -96,9 +98,33 @@ pub unsafe fn pattern_scan(module: &str, pattern: &str) -> Option<*mut u8> {
     let memory_slice: &[u8] = unsafe { slice::from_raw_parts(module_handle_ptr, size_of_image) };
     let mut cursor = Cursor::new(memory_slice);
      
-    let loc = scan_first_match(&mut cursor, pattern).unwrap();
+    let loc = scan_first_match(&mut cursor, pattern.replace("??", "?").as_str()).unwrap();
     match loc {
         None => None,
         Some(loc) => Some((module_handle_ptr.wrapping_add(loc)) as *mut u8),
+    }
+}
+
+pub unsafe fn pattern_scan_multi(module: &str, pattern: &str) -> Option<Vec<*mut u8>> {
+    let w_module_name = wide_str(module);
+    
+    let module_handle = match GetModuleHandleW(PCWSTR::from_raw(w_module_name.as_ptr())) {
+        Ok(module) => Some(module.0 as usize),
+        Err(_) => panic!("Failed to get module handle"),
+    };
+    
+    let module_handle_addr = module_handle.unwrap();
+    let mod_base = module_handle_addr as *const u8;
+    let dos_header = unsafe { &*(mod_base as *const IMAGE_DOS_HEADER) };
+    let nt_headers = unsafe { &*((mod_base.offset(dos_header.e_lfanew as isize)) as *const IMAGE_NT_HEADERS) };
+    let text_section = nt_headers.OptionalHeader.BaseOfCode as usize;
+    let size_of_text = nt_headers.OptionalHeader.SizeOfCode as usize;
+    let text_section_offset = mod_base.offset(text_section as isize);
+    let text_slice: &[u8] = unsafe { slice::from_raw_parts(text_section_offset, size_of_text) };
+    let mut cursor = Cursor::new(text_slice);
+    let locs = scan(&mut cursor, pattern.replace("??", "?").as_str());
+    match locs {
+        Err(_) => panic!("Failed to scan pattern"),
+        Ok(locs) => Some(locs.iter().map(|&loc| (text_section_offset.wrapping_add(loc)) as *mut u8).collect()),
     }
 }

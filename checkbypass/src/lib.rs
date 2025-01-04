@@ -11,16 +11,19 @@ use std::sync::Mutex;
 use windows::Win32::{
     Foundation::HINSTANCE,
     System::{Console, SystemServices::DLL_PROCESS_ATTACH},
+    System::LibraryLoader::GetModuleFileNameA
 };
 use std::panic;
 use std::ffi::CString;
 use std::ptr::null_mut;
-use winapi::um::libloaderapi::{LoadLibraryW,GetModuleFileNameA};
+use winapi::um::libloaderapi::{LoadLibraryW};
 use winapi::um::winuser::{MessageBoxA, MB_OK, MB_ICONERROR};
 use win_dbg_logger::output_debug_string;
 use modules::{ModuleManager};
 use crate::modules::{MhyContext, Patch1, Patch2};
 use lazy_static::lazy_static;
+use std::ffi::CStr;
+use std::path::Path;
 
 fn print_log(str: &str) {
     let log_str = format!("[hk4eCheckBypass] {}\n", str);
@@ -60,7 +63,12 @@ unsafe fn thread_func() {
     print_log("Loaded ext.dll");
     util::disable_memprotect_guard();
     let mut module_manager = MODULE_MANAGER.lock().unwrap();
-    let addrs = util::pattern_scan_multi("YuanShen.exe", "55 41 57 41 56 41 54 56 57 53 48 81 EC A0 00 00 00 48 8D AC 24 80 00 00 00 48 C7 45 18 FE FF FF FF B1 49 31 D2 E8 ?? ?? ?? FF");
+    let mut buffer = [0u8; 260];
+    GetModuleFileNameA(None, &mut buffer);
+    let exe_path = CStr::from_ptr(buffer.as_ptr() as *const i8).to_str().unwrap();
+    let exe_name = Path::new(exe_path).file_name().unwrap().to_str().unwrap();
+    print_log(&format!("Current executable name: {}", exe_name));
+    let addrs = util::pattern_scan_multi(exe_name, "55 41 57 41 56 41 54 56 57 53 48 81 EC A0 00 00 00 48 8D AC 24 80 00 00 00 48 C7 45 18 FE FF FF FF B1 49 31 D2 E8 ?? ?? ?? FF");
     if let Some(addrs) = addrs {
         match addrs.len() {
             0 => panic!("Failed to find pattern"),
